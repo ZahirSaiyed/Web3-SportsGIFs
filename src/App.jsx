@@ -2,11 +2,10 @@ import React, { useEffect, useState } from 'react';
 import twitterLogo from './assets/twitter-logo.svg';
 import './App.css';
 import { Connection, PublicKey, clusterApiUrl} from '@solana/web3.js';
-import {
-  Program, Provider, web3
-} from '@project-serum/anchor';
-
+import {Program, Provider, web3} from '@project-serum/anchor';
 import idl from './idl.json';
+import{Buffer} from 'buffer'
+globalThis.Buffer = Buffer;
 
 // SystemProgram is a reference to the Solana runtime!
 const { SystemProgram, Keypair } = web3;
@@ -24,6 +23,7 @@ const network = clusterApiUrl('devnet');
 const opts = {
   preflightCommitment: "processed"
 }
+
 
 // Constants
 const TWITTER_HANDLE = '_buildspace';
@@ -98,8 +98,7 @@ const App = () => {
     const { value } = event.target;
     setInputValue(value);
   };
-  
-  //creating a provider which is an authenticated connection to Solana
+
   const getProvider = () => {
     const connection = new Connection(network, opts.preflightCommitment);
     const provider = new Provider(
@@ -109,28 +108,38 @@ const App = () => {
   }
 
   const createGifAccount = async () => {
-    try {
-      const provider = getProvider();
-      const program = new Program(idl, programID, provider);
-      console.log("ping")
-      await program.rpc.startStuffOff({
-        accounts: {
-          baseAccount: baseAccount.publicKey,
-          user: provider.wallet.publicKey,
-          systemProgram: SystemProgram.programId,
-        },
-        signers: [baseAccount]
-      });
-      console.log("Created a new BaseAccount w/ address:", baseAccount.publicKey.toString())
-      await getGifList();
+  try {
+    const provider = getProvider();
+    const program = new Program(idl, programID, provider);
+    console.log("ping")
+    await program.rpc.startStuffOff({
+      accounts: {
+        baseAccount: baseAccount.publicKey,
+        user: provider.wallet.publicKey,
+        systemProgram: SystemProgram.programId,
+      },
+      signers: [baseAccount]
+    });
+    console.log("Created a new BaseAccount w/ address:", baseAccount.publicKey.toString())
+    await getGifList();
 
-    } catch(error) {
-      console.log("Error creating BaseAccount account:", error)
-    }
+  } catch(error) {
+    console.log("Error creating BaseAccount account:", error)
   }
-
+}
+  
   //render button when not connected to wallet
-  const renderConnectedContainer = () => {
+  const renderNotConnectedContainer = () => (
+    <button
+      className="cta-button connect-wallet-button"
+      onClick={connectWallet}
+    >
+      Connect to Wallet
+    </button>
+  );
+  
+  //render when connected to wallet
+const renderConnectedContainer = () => {
 // If we hit this, it means the program account hasn't been initialized.
   if (gifList === null) {
     return (
@@ -153,7 +162,7 @@ const App = () => {
         >
           <input
             type="text"
-            placeholder="Enter favorite sports gif link!"
+            placeholder="Enter gif link!"
             value={inputValue}
             onChange={onInputChange}
           />
@@ -175,16 +184,7 @@ const App = () => {
 }
 
   // UseEffects
-  useEffect(() => {
-    const onLoad = async () => {
-      await checkIfWalletIsConnected();
-    };
-    window.addEventListener('load', onLoad);
-    return () => window.removeEventListener('load', onLoad);
-  }, []);
-
-  //if we have a walletAddress go ahead and run our fetch logic
-  const getGifList = async() => {
+const getGifList = async() => {
   try {
     const provider = getProvider();
     const program = new Program(idl, programID, provider);
@@ -204,7 +204,9 @@ useEffect(() => {
     console.log('Fetching GIF list...');
     getGifList()
   }
-}, [walletAddress]);
+}, [walletAddress])
+
+;
 
    return (
     <div className="App">
