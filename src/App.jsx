@@ -180,7 +180,7 @@ const renderConnectedContainer = () => {
         >
           <input
             type="text"
-            placeholder="Enter gif link!"
+            placeholder="Enter your favorite sporting moment!"
             value={inputValue}
             onChange={onInputChange}
           />
